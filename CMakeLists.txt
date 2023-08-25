@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
 
-include(cmake/prelude.cmake)
-
 project(
     qtgraph
     VERSION 0.1.0
@@ -10,32 +8,32 @@ project(
     LANGUAGES CXX
 )
 
-include(cmake/project-is-top-level.cmake)
-include(cmake/variables.cmake)
-set(CMAKE_COMPILE_COMMANDS ON)
+# These lines help with third-party tooling integration
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+list(APPEND CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 
 # ---- find libraries ----
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets OpenGL)
+find_package(rtxi REQUIRED HINTS "../../../build/test")
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Boost REQUIRED)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-add_subdirectory(source)
-# ---- Install rules ----
+add_library(
+    qtgraph MODULE
+    qtgraph.cpp
+    qtgraph.hpp
+)
 
-if(NOT CMAKE_SKIP_INSTALL_RULES)
-  include(cmake/install-rules.cmake)
-endif()
+target_link_libraries(qtgraph PUBLIC 
+    rtxi::rtxi rtxi::xfifo Qt5::Core Qt5::Gui Qt5::Widgets 
+    Boost::headers backtrace dl 
+)
 
-# ---- Developer mode ----
+# We need to tell cmake to use the c++ version used to compile the dependent library or else...
+get_target_property(REQUIRED_COMPILE_FEATURE rtxi::rtxi INTERFACE_COMPILE_FEATURES)
+target_compile_features(qtgraph PRIVATE ${REQUIRED_COMPILE_FEATURE})
 
-if(NOT qtgraph_DEVELOPER_MODE)
-  return()
-elseif(NOT PROJECT_IS_TOP_LEVEL)
-  message(
-      AUTHOR_WARNING
-      "Developer mode is intended for developers of qtgraph"
-  )
-endif()
-
-include(cmake/dev-mode.cmake)
+target_compile_definitions(qtgraph PRIVATE BOOST_STACKTRACE_USE_ADDR2LINE)
+target_compile_definitions(qtgraph PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
