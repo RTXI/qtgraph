@@ -2,14 +2,14 @@
 #define QTGRAPH_HPP
 
 #include <QOpenGLWidget>
-#include <rtxi/module.hpp>
+#include <rtxi/widgets.hpp>
 
 namespace RTDisplay 
 {
 
 constexpr std::string_view MODULE_NAME = "Real-Time Display";
 
-enum PARAMETER : Modules::Variable::Id
+enum PARAMETER : Widgets::Variable::Id
 {
   STATE=0,
   X_SPEED,
@@ -23,33 +23,33 @@ struct sample{
   double ypos=0;
 };
 
-inline  std::vector<Modules::Variable::Info> get_default_vars() 
+inline  std::vector<Widgets::Variable::Info> get_default_vars() 
 {
   return {
       {PARAMETER::STATE,
        "State",
        "Real-Time display state",
-       Modules::Variable::STATE,
-       Modules::Variable::INIT},
+       Widgets::Variable::STATE,
+       RT::State::INIT},
       {PARAMETER::X_SPEED,
        "X Velocity",
        "X direction oscillation speed",
-       Modules::Variable::DOUBLE_PARAMETER,
+       Widgets::Variable::DOUBLE_PARAMETER,
        1.0},
       {PARAMETER::Y_SPEED,
        "Y Velocity",
        "Y Direction oscillation speed",
-       Modules::Variable::DOUBLE_PARAMETER,
+       Widgets::Variable::DOUBLE_PARAMETER,
        1.0},
       {PARAMETER::WIDTH,
        "Width",
        "Width of the output screen",
-       Modules::Variable::DOUBLE_PARAMETER,
+       Widgets::Variable::DOUBLE_PARAMETER,
        100.0},
       {PARAMETER::HEIGHT,
        "Height",
        "Height of the output screen",
-       Modules::Variable::DOUBLE_PARAMETER,
+       Widgets::Variable::DOUBLE_PARAMETER,
        100.0}
   };
 }
@@ -74,17 +74,17 @@ private:
   RT::OS::Fifo* m_source_fifo=nullptr;
 };
 
-class Plugin : public Modules::Plugin
+class Plugin : public Widgets::Plugin
 {
 public:
   explicit Plugin(Event::Manager* ev_manager);  
   RT::OS::Fifo* getComponentFifo();
 };
 
-class Component : public Modules::Component
+class Component : public Widgets::Component
 {
 public:
-  explicit Component(Modules::Plugin* hplugin);
+  explicit Component(Widgets::Plugin* hplugin);
   void execute() override;
   RT::OS::Fifo* getFifo(){ return this->m_fifo.get(); }
 private:
@@ -96,7 +96,7 @@ private:
   std::unique_ptr<RT::OS::Fifo> m_fifo;
 };
 
-class Panel : public Modules::Panel
+class Panel : public Widgets::Panel
 {
   Q_OBJECT
 public:

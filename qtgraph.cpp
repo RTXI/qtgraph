@@ -1,36 +1,39 @@
 
 #include <iostream>
-#include <qnamespace.h>
+#include <QBoxLayout>
 #include <QTimer>
 #include <cmath>
 #include <QPainter>
 #include <QButtonGroup>
+#include <qpushbutton.h>
+#include <rtxi/fifo.hpp>
+#include <rtxi/rtos.hpp>
 #include "qtgraph.hpp"
 
 #define PI 3.14159
 
-std::unique_ptr<Modules::Plugin> createRTXIPlugin(Event::Manager* ev_manager)
+std::unique_ptr<Widgets::Plugin> createRTXIPlugin(Event::Manager* ev_manager)
 {
   return std::make_unique<RTDisplay::Plugin>(ev_manager);
 }
 
-Modules::Panel* createRTXIPanel(QMainWindow* main_window,
+Widgets::Panel* createRTXIPanel(QMainWindow* main_window,
                                 Event::Manager* ev_manager)
 {
   return new RTDisplay::Panel(main_window, ev_manager);
 }
 
-std::unique_ptr<Modules::Component> createRTXIComponent(
-    Modules::Plugin* host_plugin)
+std::unique_ptr<Widgets::Component> createRTXIComponent(
+    Widgets::Plugin* host_plugin)
 {
   return std::make_unique<RTDisplay::Component>(host_plugin);
 }
 
-Modules::FactoryMethods fact;
+Widgets::FactoryMethods fact;
 
 extern "C"
 {
-Modules::FactoryMethods* getFactories()
+Widgets::FactoryMethods* getFactories()
 {
   fact.createPanel = &createRTXIPanel;
   fact.createComponent = &createRTXIComponent;
@@ -86,7 +89,7 @@ void RTDisplay::RTWindow::paintEvent(QPaintEvent*  /*event*/)
 }
 
 RTDisplay::Plugin::Plugin(Event::Manager* ev_manager)
-  : Modules::Plugin(ev_manager, std::string(RTDisplay::MODULE_NAME))
+  : Widgets::Plugin(ev_manager, std::string(RTDisplay::MODULE_NAME))
 {
 }
 
@@ -97,8 +100,8 @@ RT::OS::Fifo* RTDisplay::Plugin::getComponentFifo()
   return component->getFifo();
 }
 
-RTDisplay::Component::Component(Modules::Plugin* hplugin)
-  : Modules::Component(hplugin,
+RTDisplay::Component::Component(Widgets::Plugin* hplugin)
+  : Widgets::Component(hplugin,
                        std::string(RTDisplay::MODULE_NAME),
                        std::vector<IO::channel_t>(),
                        RTDisplay::get_default_vars())
@@ -109,31 +112,31 @@ RTDisplay::Component::Component(Modules::Plugin* hplugin)
 void RTDisplay::Component::execute()
 {
   RTDisplay::sample sample;
-  switch (this->getValue<Modules::Variable::state_t>(RTDisplay::PARAMETER::STATE)) {
-    case Modules::Variable::EXEC:
+  switch (this->getState()) {
+    case RT::State::EXEC:
       this->time+=1.0;
       sample.xpos = this->width/2 + (this->width/2)*sin(this->time*2*PI/60);
       sample.ypos = this->height/2 + (this->height/2)*sin(this->time*2*PI/30);    
       this->m_fifo->writeRT(&sample, sizeof(RTDisplay::sample));
       break;
-    case Modules::Variable::MODIFY:
-    case Modules::Variable::INIT:
+    case RT::State::MODIFY:
+    case RT::State::INIT:
       this->xspeed = getValue<double>(RTDisplay::PARAMETER::X_SPEED);
       this->yspeed = getValue<double>(RTDisplay::PARAMETER::Y_SPEED);
       this->width = getValue<double>(RTDisplay::PARAMETER::WIDTH);
       this->height = getValue<double>(RTDisplay::PARAMETER::HEIGHT);
-      setValue(RTDisplay::PARAMETER::STATE, Modules::Variable::EXEC);
+      setValue(RTDisplay::PARAMETER::STATE, RT::State::EXEC);
       break;
-    case Modules::Variable::PERIOD:
-    case Modules::Variable::PAUSE:
-    case Modules::Variable::UNPAUSE:
+    case RT::State::PERIOD:
+    case RT::State::PAUSE:
+    case RT::State::UNPAUSE:
     default:
       break;
   }
 }
 
 RTDisplay::Panel::Panel(QMainWindow* main_window, Event::Manager* ev_manager)
-  : Modules::Panel(std::string(RTDisplay::MODULE_NAME),
+  : Widgets::Panel(std::string(RTDisplay::MODULE_NAME),
                    main_window,
                    ev_manager)
 {
