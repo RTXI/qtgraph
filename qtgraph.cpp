@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <QMdiSubWindow>
 #include <QBoxLayout>
 #include <QTimer>
 #include <cmath>
@@ -41,7 +42,6 @@ Widgets::FactoryMethods* getFactories()
   return &fact;
 }
 };
-
 
 
 RTDisplay::RTWindow::RTWindow(QWidget* parent, RT::OS::Fifo* fifo) 
@@ -125,11 +125,12 @@ void RTDisplay::Component::execute()
       this->yspeed = getValue<double>(RTDisplay::PARAMETER::Y_SPEED);
       this->width = getValue<double>(RTDisplay::PARAMETER::WIDTH);
       this->height = getValue<double>(RTDisplay::PARAMETER::HEIGHT);
-      setValue(RTDisplay::PARAMETER::STATE, RT::State::EXEC);
+      setState(RT::State::EXEC);
       break;
     case RT::State::PERIOD:
-    case RT::State::PAUSE:
     case RT::State::UNPAUSE:
+      this->setState(RT::State::EXEC);
+    case RT::State::PAUSE:
     default:
       break;
   }
@@ -140,7 +141,7 @@ RTDisplay::Panel::Panel(QMainWindow* main_window, Event::Manager* ev_manager)
                    main_window,
                    ev_manager)
 {
-  createGUI(RTDisplay::get_default_vars(), { RTDisplay::PARAMETER::STATE});
+  createGUI(RTDisplay::get_default_vars(), {});
   auto* widget_layout = dynamic_cast<QVBoxLayout*>(this->layout());
   auto* buttonGroup = new QButtonGroup();
   auto* show_button = new QPushButton("Show RT Display");
@@ -151,6 +152,11 @@ RTDisplay::Panel::Panel(QMainWindow* main_window, Event::Manager* ev_manager)
   widget_layout->addWidget(hide_button);
   connect(show_button, SIGNAL(clicked()), this, SLOT(showRealTimeDisplay()));
   connect(hide_button, SIGNAL(clicked()), this, SLOT(hideRealTimeDisplay()));
+  // Make sure that the window is sized correctly when opened
+  this->getMdiWindow()->setFixedSize(this->minimumSizeHint());
+  // We don't need to call show as rtxi main_window logic will call it for us 
+  // when ready to show the window.
+  // this->show()
 }
 
 void RTDisplay::Panel::showRealTimeDisplay()

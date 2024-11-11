@@ -11,8 +11,7 @@ constexpr std::string_view MODULE_NAME = "Real-Time Display";
 
 enum PARAMETER : Widgets::Variable::Id
 {
-  STATE=0,
-  X_SPEED,
+  X_SPEED=0,
   Y_SPEED,
   WIDTH,
   HEIGHT,
@@ -26,11 +25,6 @@ struct sample{
 inline  std::vector<Widgets::Variable::Info> get_default_vars() 
 {
   return {
-      {PARAMETER::STATE,
-       "State",
-       "Real-Time display state",
-       Widgets::Variable::STATE,
-       RT::State::INIT},
       {PARAMETER::X_SPEED,
        "X Velocity",
        "X direction oscillation speed",
